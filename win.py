@@ -19,11 +19,23 @@ class Win:
 		self.w, self.h = w, h
 		self.win = parent.subwin(h, w, y, x)
 		self.win.border()
-		pos = w / 2 - len(title) / 2
-		self.win.addstr(0, pos, title)
+		self.title = title
+
+	def drawTitle(self):
+		pos = self.w / 2 - len(self.title) / 2
+		self.win.addstr(0, pos, self.title)
+
 	def draw(self):
-		pass
+		self.win.border()
+		self.drawTitle()
+
 	def handleKey(self, k):
+		pass
+
+	def focus(self):
+		pass
+
+	def loseFocus(self):
 		pass
 
 class ActionPane(Win):
@@ -34,6 +46,7 @@ class ActionPane(Win):
 		self.selectBtn = -1
 		self.buttons = ['  ADD  ', ' DELETE ']
 	def draw(self):
+		Win.draw(self)
 		off = self.btnOffset
 		for i, btn in enumerate(self.buttons):
 			if self.selectBtn == i:
@@ -41,8 +54,21 @@ class ActionPane(Win):
 			else:
 				self.win.addstr(1, off, btn);
 			off = off + self.btnSpace + len(btn)
-	def handleKey(self):
-		pass
+		self.win.refresh()
+
+	def handleKey(self, k):
+		if k == ord('h') or curses.KEY_LEFT == k:
+			self.selectBtn = self.selectBtn - 1
+			if self.selectBtn < 0:
+				self.selectBtn = len(self.buttons) - 1
+		elif k == ord('l') or curses.KEY_RIGHT == k:
+			self.selectBtn = (self.selectBtn+1) % len(self.buttons)
+
+	def focus(self):
+		self.selectBtn = 0
+
+	def loseFocus(self):
+		self.selectBtn = -1
 	
 class MainPane(Win):
 	def __init__(self, parent, x, y, w, h, title=''):
@@ -74,6 +100,7 @@ class MainPane(Win):
 				self.selected = self.selected + 1
 
 	def draw(self):
+		Win.draw(self)
 		ss = self.sstore.getSessions()
 
 		first = self.first
@@ -104,6 +131,9 @@ class MainPane(Win):
 class PropPane(Win):
 	def __init__(self, parent, x, y, w, h, title=''):
 		Win.__init__(self, parent, x, y, w, h, title)
+	def draw(self):
+		Win.draw(self)
+		self.win.refresh()
 
 class MainWin:
 	def __init__(self, sessionpath, title='[TERM SSH]'):
@@ -130,7 +160,7 @@ class MainWin:
 		mainX, mainY = 1, 1
 		mainW, mainH = self.width * 3 / 5, self.height-5
 		self.mainPane = MainPane(stdscr, mainX, mainY, 
-				mainW, mainH, 'SESSION LIST')
+				mainW, mainH, '*SESSION LIST*')
 
 		# create property panel
 		propX, propY = mainX + mainW + 1, 1
@@ -143,15 +173,15 @@ class MainWin:
 		actW, actH = self.width-2, 3
 		self.actPane= ActionPane(stdscr, actX, actY, actW, actH)
 
-		self.selectedPane = self.mainPane
+		self.panes = (self.mainPane, self.propPane, self.actPane)
+		self.selectedPane = 0
 
 		# dummy store
 		sstore = session_store.SessionStore()
 
-		sstore.add(session.Session('0','127.0.0.1', 21, 'cj', '0'))
-		sstore.add(session.Session('1','127.0.0.1', 21, 'zw', '0'))
-		sstore.add(session.Session('2','127.0.0.1', 21, 'hw', '0'))
-		sstore.add(session.Session('3','127.0.0.1', 21, 'ww', '0'))
+		sstore.add(session.Session('132','192.168.1.132', 21, 'cj', '0'))
+		sstore.add(session.Session('232','192.168.1.232', 21, 'cj', '0'))
+		sstore.add(session.Session('233','192.168.1.233', 21, 'cj', '0'))
 
 		self.mainPane.setSessionStore(sstore)
 
@@ -165,14 +195,21 @@ class MainWin:
 
 			k = stdscr.getch()
 			if ord('\t') == k:
-				shiftPane()
-			elif curses.KEY_F3 == k:
+				self.shiftPane()
+			elif curses.KEY_F4 == k:
 				break
 			else:
-				self.selectedPane.handleKey(k)
+				self.panes[self.selectedPane].handleKey(k)
 		endall()
 	def shiftPane(self):
-		pass	
+		oldIdx = self.selectedPane;
+		self.panes[oldIdx].title = self.panes[oldIdx].title[1:-1]
+		self.panes[oldIdx].loseFocus()
+
+		self.selectedPane = (oldIdx+ 1) % len(self.panes)
+		old = self.panes[self.selectedPane].title
+		self.panes[self.selectedPane].title = '*' + old + '*'
+		self.panes[self.selectedPane].focus()
 	
 if __name__ == '__main__':
 	pane = MainWin('')

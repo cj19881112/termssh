@@ -20,7 +20,7 @@ class Session:
 		return '%s %s %s %s %s %s'%(self.name,self.ip,self.port,
 				self.user,self.passwd,self.encoding)
 	def tostr(self):
-		return self.__str__()
+		return '%-10s => [%s@%s]' % (self.name, self.user, self.ip)
 		
 if __name__ == '__main__':
 	s = Session('develop', '192.168.1.1', 1234, 'zw', '123')
