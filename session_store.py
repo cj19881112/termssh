@@ -11,8 +11,8 @@ class SessionStore:
 		self.sessions[session.name] = session
 	def delete(self, name):
 		self.sessions[name] = None
-	def sessions(self):
-		return [x for x in self.sessions.values if x != None]
+	def getSessions(self):
+		return [x for x in self.sessions.values() if x != None]
 	# name ip port uname passwd encoding
 	def load(self, path):
 		self.path = path

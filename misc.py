@@ -1,0 +1,8 @@
+l_side='│'
+r_side='│'
+t_side='━' 
+b_side='━' 
+t_left='┍'
+t_right='┑'
+b_left='┕'
+b_right='┙'
