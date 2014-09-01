@@ -15,6 +15,22 @@ class Session:
 	def __init__(self, name, ip, port, user, passwd, encoding='utf-8'):
 		self.name, self.ip, self.port = name, ip, port
 		self.user, self.passwd, self.encoding = user, passwd, encoding
+	def toDict(self):
+		return {
+			'name' 		: self.name,
+			'ip' 		: self.ip,
+			'port' 		: self.port,
+			'user'		: self.user,
+			'passwd'	: self.passwd,
+			'encoding'	: self.encoding
+		}
+	def fromDict(self, d):
+		self.name 		= d['name']
+		self.ip 		= d['ip']
+		self.port		= d['port']
+		self.user		= d['user']
+		self.passwd		= d['passwd']
+		self.encoding 	= d['encoding']
 	def __str__(self):
 		return '%s %s %s %s %s %s'%(self.name,self.ip,self.port,
 				self.user,self.passwd,self.encoding)

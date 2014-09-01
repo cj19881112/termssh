@@ -1,14 +1,19 @@
+import curses
+import curses.ascii
 
 class TextField:
 	def __init__(self, parent, title, x, y, n):
 		self.parent, self.title = parent, title + ': '
 		self.x, self.y, self.n = x, y, n
-		self.content, self.edit = 'K.O.', False
+		self.content, self.edit = '', False
 		self.maxContent = self.n - len(self.title)
 
 	def editable(self, st):
 		self.edit = st
 		self.parent.move(self.y, self.x + len(self.title))
+
+	def setContent(self, content):
+		self.content = content
 
 	def handleKey(self, k):
 		if curses.ascii.isalpha(k) or ord(' ') == k:
@@ -31,4 +36,7 @@ class TextField:
 					self.content + self.padding())
 	def getstr(self):
 		return self.content
+
+	def getTitle(self):
+		return self.title[:-2]
 

@@ -6,6 +6,7 @@ import session
 import ssh
 import config
 import os
+import textbox
 
 _win = ''
 
@@ -73,12 +74,17 @@ class ActionPane(Win):
 		self.selectBtn = -1
 	
 class MainPane(Win):
-	def __init__(self, parent, x, y, w, h, title=''):
+	def __init__(self, parent, x, y, w, h, sstore, title=''):
 		Win.__init__(self, parent, x, y, w, h, title)
 		self.cap = self.h-2
 		self.first = 0
 		self.selected = 0
 		self.basicOff = 3
+		self.sstore = sstore
+
+	def setPropPane(self, propPane):
+		self.propPane =  propPane
+		self.propPane.setSession(self.curSession())
 
 	def handleKey(self, k):
 		if ord('\n') == k:
@@ -91,6 +97,8 @@ class MainPane(Win):
 				self.scrollUp()
 			else:
 				self.selected = self.selected - 1
+			self.propPane.setSession(self.curSession())
+
 
 		elif curses.KEY_DOWN == k or ord('j') == k:
 			last = self.first + self.cap
@@ -101,6 +109,7 @@ class MainPane(Win):
 				self.scrollDown()
 			else:
 				self.selected = self.selected + 1
+			self.propPane.setSession(self.curSession())
 
 	def draw(self):
 		Win.draw(self)
@@ -123,6 +132,10 @@ class MainPane(Win):
 		else:
 			self.win.addstr(pos+1, self.basicOff, s.tostr())
 
+	def curSession(self):
+		ss = self.sstore.getSessions()
+		return ss[self.selected]
+
 	def setSessionStore(self, sstore):
 		self.sstore = sstore
 
@@ -134,12 +147,48 @@ class MainPane(Win):
 class PropPane(Win):
 	def __init__(self, parent, x, y, w, h, title=''):
 		Win.__init__(self, parent, x, y, w, h, title)
+		self.selected = 0
+
+	def setSession(self, s):
+		self.session, props = s, s.toDict()
+		self.propBox = []
+		i, x, y = 0, 2, 0
+		for (k, v) in props.items():
+			y = 2 + i 
+			self.propBox.append(textbox.TextField(self.win, '%8s'%(k), 
+					x, y, 25))
+			self.propBox[i].setContent(v)
+			i = i + 1
+		
 	def draw(self):
 		Win.draw(self)
+		for textField in self.propBox:
+			textField.draw()
+		self.win.refresh()
+
+	def handleKey(self, k):
+		if ord('\n') == k:
+			self.propBox[self.selected].editable(False)
+			self.selected = (self.selected + 1) % len(self.propBox)
+			self.propBox[self.selected].editable(True)
+		else:
+			self.propBox[self.selected].handleKey(k)
+		
+	def focus(self):
+		self.selected  = 0
+		self.propBox[0].editable(True)
+
+	def loseFocus(self):
+		rst = {}
+		self.propBox[self.selected].editable(False)
+		for p in self.propBox:
+			rst[p.getTitle().strip()] = p.getstr().strip()
+		self.session.fromDict(rst)
+		self.draw()
 		self.win.refresh()
 
 class MainWin:
-	def __init__(self, sessionpath, title='[TERM SSH]'):
+	def __init__(self, sessionStore, title='[TERM SSH]'):
 		# set locale
 		import locale
 		locale.setlocale(locale.LC_ALL, '')
@@ -159,17 +208,21 @@ class MainWin:
 
 		self.width, self.height = x, y
 
-		# create main panel
+		# main panel geometry
 		mainX, mainY = 1, 1
 		mainW, mainH = self.width * 3 / 5, self.height-5
-		self.mainPane = MainPane(stdscr, mainX, mainY, 
-				mainW, mainH, '*SESSION LIST*')
 
 		# create property panel
 		propX, propY = mainX + mainW + 1, 1
 		propW, propH = self.width - mainW - 3, mainH
 		self.propPane = PropPane(stdscr, propX, propY, 
 				propW, propH, 'PROPERTY')
+
+		# create main panel
+		self.mainPane = MainPane(stdscr, mainX, mainY, 
+				mainW, mainH, sessionStore, '*SESSION LIST*')
+		self.mainPane.setPropPane(self.propPane)
+
 
 		# create action panel
 		actX, actY = 1, self.height - 4
@@ -220,11 +273,14 @@ class MainWin:
 		self.mainPane.setSessionStore(ss)
 	
 if __name__ == '__main__':
-	win = MainWin('')
 	ss = session_store.SessionStore()
 	ss.load(config.sessionFilePath())
-	win.setStore(ss)
+	win = MainWin(ss)
+#	try:
 	win.loop()
+#	except Exception, e:
+#		endall()
+#		print(e)
 
 
 
