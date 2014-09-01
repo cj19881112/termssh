@@ -11,7 +11,6 @@ def make_session(line):
 		raise InvalidFormat 
 	return Session(opts[0], opts[1], opts[2], opts[3], opts[4], opts[5])
 
-
 class Session:
 	def __init__(self, name, ip, port, user, passwd, encoding='utf-8'):
 		self.name, self.ip, self.port = name, ip, port
