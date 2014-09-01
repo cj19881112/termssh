@@ -4,6 +4,8 @@ import curses
 import session_store
 import session
 import ssh
+import config
+import os
 
 _win = ''
 
@@ -80,9 +82,10 @@ class MainPane(Win):
 
 	def handleKey(self, k):
 		if ord('\n') == k:
-			s = self.sstore.getSessions()[self.selected]
-			endall()
-			ssh.Ssh().start(s)	
+			if 0 != len(self.sstore.getSessions()):
+				s = self.sstore.getSessions()[self.selected]
+				endall()
+				ssh.Ssh().start(s)	
 		elif curses.KEY_UP == k or ord('k') == k:
 			if self.selected == self.first:
 				self.scrollUp()
@@ -176,14 +179,6 @@ class MainWin:
 		self.panes = (self.mainPane, self.propPane, self.actPane)
 		self.selectedPane = 0
 
-		# dummy store
-		sstore = session_store.SessionStore()
-
-		sstore.add(session.Session('132','192.168.1.132', 21, 'cj', '0'))
-		sstore.add(session.Session('232','192.168.1.232', 21, 'cj', '0'))
-		sstore.add(session.Session('233','192.168.1.233', 21, 'cj', '0'))
-
-		self.mainPane.setSessionStore(sstore)
 
 	def loop(self):
 		stdscr = self.stdscr
@@ -210,10 +205,26 @@ class MainWin:
 		old = self.panes[self.selectedPane].title
 		self.panes[self.selectedPane].title = '*' + old + '*'
 		self.panes[self.selectedPane].focus()
+
+	def setStore(self, ss):
+		# dummy store
+		"""
+		sstore = session_store.SessionStore()
+		sstore.add(session.Session('132','192.168.1.132', 21, 
+					'cj', '0', 'gb2312'))
+		sstore.add(session.Session('232','192.168.1.232', 21, 
+					'cj', '0', 'gb2312'))
+		sstore.add(session.Session('233','192.168.1.233', 21, 
+					'cj', '0', 'gb2312'))
+		"""
+		self.mainPane.setSessionStore(ss)
 	
 if __name__ == '__main__':
-	pane = MainWin('')
-	pane.loop()
+	win = MainWin('')
+	ss = session_store.SessionStore()
+	ss.load(config.sessionFilePath())
+	win.setStore(ss)
+	win.loop()
 
 
 

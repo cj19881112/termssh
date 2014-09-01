@@ -3,6 +3,7 @@ store sessions
 """
 
 import session
+import os
 
 class SessionStore:
 	def __init__(self):
@@ -16,7 +17,10 @@ class SessionStore:
 	# name ip port uname passwd encoding
 	def load(self, path):
 		self.path = path
+		if not os.path.exists(path):
+			return
 		for line in open(path):
+			print(line)
 			line = line[:-1] # erase '\n' 
 			self.add(session.make_session(line))
 	def save(self, path=None):
